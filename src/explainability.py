@@ -14,6 +14,7 @@ show_cam_on_image: Any = None
 
 try:
     import cv2 as _cv2  # type: ignore
+
     cv2 = _cv2
 except ImportError:
     pass
@@ -21,6 +22,7 @@ except ImportError:
 try:
     from lime import lime_image as _li  # type: ignore
     from skimage.segmentation import mark_boundaries as _mb  # type: ignore
+
     lime_image = _li
     mark_boundaries = _mb
 except ImportError:
@@ -29,12 +31,14 @@ except ImportError:
 try:
     from pytorch_grad_cam import GradCAM as _gc  # type: ignore
     from pytorch_grad_cam.utils.image import show_cam_on_image as _sci  # type: ignore
+
     GradCAM = _gc
     show_cam_on_image = _sci
 except ImportError:
     pass
 
 logger = logging.getLogger(__name__)
+
 
 def run_gradcam(
     model: torch.nn.Module, img_tensor: torch.Tensor, original_size: tuple

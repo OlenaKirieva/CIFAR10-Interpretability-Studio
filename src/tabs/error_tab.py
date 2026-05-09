@@ -14,7 +14,7 @@ from src.ui_components import render_classification_report_mini, render_error_ma
 
 
 def render_error_tab(
-    config: dict, df_preds: pd.DataFrame, run_id: str, exp_id: str, mlflow_uri: str
+    config: dict, df_preds: pd.DataFrame,  run_id: str, exp_id: str, mlflow_uri: str
 ) -> None:
     """
     Renders the Error Explorer tab layout.

@@ -1,9 +1,10 @@
 """
 CIFAR-10 Interpretability Studio
 Main entry point for the Streamlit dashboard.
-Handles model selection, data synchronization, and tab navigation.
+Organized into a modular architecture for professional deployment.
 """
 
+import logging
 import os
 import sys
 from typing import Optional
@@ -12,75 +13,74 @@ import mlflow  # type: ignore
 import pandas as pd
 import streamlit as st
 
-# Ensure the 'src' directory is in the python path for module discovery
+# Ensure internal modules are discoverable
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".")))
 
 from src.data_loader import prepare_test_data_locally
 from src.mlflow_utils import (
     get_all_experiments,
     init_mlflow,
+    load_artifact_text,
     load_model_smart,
     load_predictions_from_mlflow,
 )
 from src.tabs.dataset_tab import render_dataset_tab
 from src.tabs.error_tab import render_error_tab
 from src.tabs.explain_tab import render_explain_tab
-from src.utils import MODEL_DESCRIPTIONS, get_absolute_path, load_config, setup_logging
+from src.utils import MODEL_DESCRIPTIONS, load_config, setup_logging
 
-# Page configuration for a wide-screen professional look
+# Professional page configuration
 st.set_page_config(
     page_title="CIFAR-10 Interpretability Studio", page_icon="🧠", layout="wide"
 )
 
+logger = logging.getLogger(__name__)
+
 
 def main() -> None:
-    """Main dashboard logic."""
+    """Main dashboard orchestration logic."""
     setup_logging()
+    config = load_config()
 
-    try:
-        config = load_config()
-    except Exception as e:
-        st.error(f"Critical: Configuration file not found. {e}")
-        st.stop()
-
-    # --- 1. DATA INITIALIZATION ---
-    # Automatically prepares 10,000 test images locally if not present
+    # --- 1. DATA PREPARATION ---
+    # Downloads and prepares 10,000 images on the first run
     df_full = prepare_test_data_locally()
 
-    # --- 2. SIDEBAR: MODEL MANAGEMENT ---
-    st.sidebar.header("📦 Model Selection")
+    # --- 2. SIDEBAR: MODEL SELECTION ---
+    st.sidebar.header("📦 Model Management")
 
-    # Dynamic database path resolution (Avoids hard-coded absolute paths)
-    db_path = get_absolute_path(config["mlflow"]["db_path"])
-    mlflow_uri = f"sqlite:///{db_path.replace('\\', '/')}"
+    # RELIABLE CONNECTION: Using a relative path for SQLite compatibility
+    db_file = config["mlflow"]["db_path"]
+    mlflow_uri = f"sqlite:///{db_file}"
     init_mlflow(mlflow_uri)
+    logger.info(f"Connected to MLflow Database: {mlflow_uri}")
 
     try:
         all_exps = get_all_experiments()
-        # Filter for the research experiment defined in Lab 4.1
+        # Locate the research experiment folder
         selected_exp = next(
             (e for e in all_exps if e.name == "CIFAR10_Final_Research"), None
         )
 
         if selected_exp is None:
-            st.sidebar.warning(
-                "Target experiment not found in MLflow. Showing all available."
-            )
             if all_exps:
                 selected_exp = all_exps[0]
+                st.sidebar.warning(
+                    f"Research exp not found. Using: {selected_exp.name}"
+                )
             else:
-                st.sidebar.error("No experiments found. Ensure mlflow.db is present.")
+                st.sidebar.error("No MLflow database records found.")
                 st.stop()
 
-        # Retrieve runs and filter for successful completions
+        # Fetch runs and filter for successful iterations
         runs_df = mlflow.search_runs(experiment_ids=[selected_exp.experiment_id])
         if runs_df.empty:
-            st.sidebar.error("No runs found in the selected experiment.")
+            st.sidebar.error("No valid runs found in the database.")
             st.stop()
 
         finished_runs = runs_df[runs_df["status"] == "FINISHED"].copy()
 
-        # Model Version Filtering Logic: Keep 1 best Baseline + All Pro versions
+        # Architecture filtering: Best SimpleCNN + All ProCNN versions
         is_simple = finished_runs["tags.mlflow.runName"].str.contains(
             "Simple", na=False
         )
@@ -94,18 +94,18 @@ def main() -> None:
         )
         final_runs = pd.concat([all_pro, best_simple])
 
-        # Interactive Model Selection
         selected_run_name = st.sidebar.selectbox(
-            "Select Architecture Version",
+            "Select Model Version",
             final_runs["tags.mlflow.runName"].fillna("Unnamed").tolist(),
         )
+
         run_info = final_runs[
             final_runs["tags.mlflow.runName"] == selected_run_name
         ].iloc[0]
         run_id = run_info["run_id"]
 
         # 3. RESOURCE LOADING
-        # Smart load model weights and pre-calculated predictions
+        # Load weights and pre-calculated predictions
         model = load_model_smart(
             run_id, selected_exp.experiment_id, selected_run_name, mlflow_uri
         )
@@ -113,7 +113,7 @@ def main() -> None:
             run_id, mlflow_uri, selected_exp.experiment_id
         )
 
-        # Synchronize MLflow predictions with local image paths
+        # Synchronize MLflow results with local storage paths
         df_preds: Optional[pd.DataFrame] = None
         if df_preds_raw is not None:
             min_len = min(len(df_preds_raw), len(df_full))
@@ -121,13 +121,12 @@ def main() -> None:
             df_preds["image_path"] = df_full["image_path"].iloc[:min_len].values
 
             if model:
-                st.sidebar.success(f"✅ {selected_run_name} \n Ready")
+                st.sidebar.success(f"✅ Model Loaded\n{selected_run_name[:30]}...")
 
-        # 4. MODEL PASSPORT (Sidebar UI)
+        # 4. MODEL PASSPORT (Metadata Display)
         st.sidebar.divider()
         st.sidebar.subheader("📄 Model Passport")
 
-        # Determine metadata key
         if "Simple" in selected_run_name:
             m_key = "SimpleCNN"
         elif "E:100" in selected_run_name:
@@ -136,20 +135,25 @@ def main() -> None:
             m_key = "ProCNN_8Layers_Fast"
 
         info = MODEL_DESCRIPTIONS.get(m_key, {})
-        st.sidebar.write(f"**Description:** {info.get('description', 'N/A')}")
+        st.sidebar.write(f"**Arch:** {info.get('description', 'N/A')}")
         st.sidebar.write(
             f"**Complexity:** {info.get('layers')} Layers | {info.get('params')} Params"
         )
 
-        # with st.sidebar.expander("📈 View Training Artifact (TXT)"):
-        #     report = load_artifact_text(run_id, selected_exp.experiment_id, mlflow_uri, "classification_report.txt")
-        #     st.code(report if report else "Report not available for this run.", language="text")
+        with st.sidebar.expander("📈 View Training Artifact"):
+            report = load_artifact_text(
+                run_id,
+                selected_exp.experiment_id,
+                mlflow_uri,
+                "classification_report.txt",
+            )
+            st.code(report if report else "Report not found.", language="text")
 
     except Exception as e:
-        st.sidebar.error(f"Initialization Failure: {e}")
+        st.sidebar.error(f"Setup Error: {e}")
         st.stop()
 
-    # --- 5. MAIN NAVIGATION (Tabs) ---
+    # --- 5. MAIN DASHBOARD TABS ---
     t1, t2, t3 = st.tabs(
         ["📊 Dataset Exploration", "🔍 Error Analysis", "🧠 Model Interpretation"]
     )
@@ -158,6 +162,7 @@ def main() -> None:
         render_dataset_tab(config, df_full)
 
     with t2:
+        # Pass the model object for error inspection if needed
         render_error_tab(
             config, df_preds, run_id, selected_exp.experiment_id, mlflow_uri
         )

@@ -23,45 +23,42 @@ def _get_cached_registry(registry_path: str) -> pd.DataFrame:
 
 
 def prepare_test_data_locally() -> pd.DataFrame:
-    img_dir = DATA_CACHE_DIR / "test_images"
-    registry_path = DATA_CACHE_DIR / "test_registry.csv"
+    save_dir = Path("data_cache")
+    img_dir = save_dir / "test_images"
+    registry_path = save_dir / "test_registry.csv"
 
     if registry_path.exists():
         return _get_cached_registry(str(registry_path))
 
     placeholder = st.empty()
     with placeholder.container():
-        st.info(
-            "📦 First launch: Preparing images... Check your terminal for progress."
-        )
+        st.info("📦 First launch: Preparing dataset (10,000 images)...")
 
-        DATA_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        # Додаємо статусний текст, який точно видно
+        status_text = st.empty()
+
+        save_dir.mkdir(parents=True, exist_ok=True)
         img_dir.mkdir(parents=True, exist_ok=True)
 
         url = "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
-        archive_path = DATA_CACHE_DIR / "cifar.tar.gz"
+        archive_path = save_dir / "cifar.tar.gz"
 
-        # 1. Loading
         if not archive_path.exists():
-            logger.info("Downloading archive from University of Toronto...")
+            status_text.text("Status: Downloading archive...")
             response = requests.get(url, stream=True, timeout=30)
             with open(archive_path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
-            logger.info("Download complete.")
 
-        # 2. Unpacking
-        logger.info("Extracting test_batch...")
+        status_text.text("Status: Extracting test batch...")
         with tarfile.open(archive_path, "r:gz") as tar:
             member = tar.getmember("cifar-10-batches-py/test_batch")
             member.name = os.path.basename(member.name)
-            tar.extract(member, path=DATA_CACHE_DIR)
+            tar.extract(member, path=save_dir)
         archive_path.unlink()
-        logger.info("Extraction complete.")
 
-        # 3. Conversion
-        logger.info("Converting to JPG...")
-        with open(DATA_CACHE_DIR / "test_batch", "rb") as f:
+        status_text.text("Status: Converting binary to JPG...")
+        with open(save_dir / "test_batch", "rb") as f:
             entry = pickle.load(f, encoding="latin1")
             images = entry["data"].reshape(-1, 3, 32, 32).transpose(0, 2, 3, 1)
             filenames = entry["filenames"]
@@ -72,21 +69,16 @@ def prepare_test_data_locally() -> pd.DataFrame:
         for i in range(len(images)):
             img_name = f"{filenames[i]}.jpg"
             full_path = img_dir / img_name
-
-            if not full_path.exists():
-                Image.fromarray(images[i]).save(full_path)
-
-            rel_path = f"data_cache/test_images/{img_name}"
-            data_records.append({"image_path": rel_path, "label": int(labels[i])})
-
+            Image.fromarray(images[i]).save(full_path)
+            data_records.append({"image_path": str(full_path), "label": int(labels[i])})
             if i % 1000 == 0:
                 p_bar.progress((i + 1) / 10000)
-                logger.info(f"Processed {i}/10000 images...")
+                status_text.text(f"Status: Converted {i}/10000 images")
 
         df = pd.DataFrame(data_records)
         df.to_csv(registry_path, index=False)
-        logger.info("Registry saved successfully!")
-        st.success("✅ Done!")
+        status_text.text("Status: Finalizing...")
+        st.success("✅ Dataset ready!")
         time.sleep(1)
 
     placeholder.empty()
