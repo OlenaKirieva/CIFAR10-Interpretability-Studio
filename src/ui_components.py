@@ -121,14 +121,14 @@ def render_prediction_box(config: Dict[str, Any], pred_idx: int, conf: float, tr
     with st.container():
         if true_label is not None:
             if class_name == true_label:
-                st.success(f"**Prediction:** {class_name.upper()} (Correct)")
+                st.success(f"**Prediction:** {class_name} (Correct)")
                 # Adding a blank space to ensure consistent row count
                 st.write("") 
             else:
-                st.error(f"**Prediction:** {class_name.upper()} (Incorrect)")
+                st.error(f"**Prediction:** {class_name} (Incorrect)")
                 st.info(f"**True Category:** {true_label}")
         else:
-            st.success(f"**Predicted Class:** {class_name.upper()}")
+            st.success(f"**Predicted Class:** {class_name}")
             st.write("") # Spacer
 
         st.write(f"**Model Confidence:** {conf:.2%}")
