@@ -122,12 +122,12 @@ def render_prediction_box(
     if true_label is not None:
         is_correct = class_name == true_label
         if is_correct:
-            st.success(f"**Prediction:** {class_name.upper()} (Correct)")
+            st.success(f"**Prediction:** {class_name} (Correct)")
         else:
-            st.error(f"**Prediction:** {class_name.upper()} (Incorrect)")
+            st.error(f"**Prediction:** {class_name} (Incorrect)")
             st.info(f"**True Category:** {true_label}")
     else:
-        st.success(f"**Predicted Class:** {class_name.upper()}")
+        st.success(f"**Predicted Class:** {class_name}")
 
     st.write(f"**Model Confidence:** {conf:.2%}")
 
