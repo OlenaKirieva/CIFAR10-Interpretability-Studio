@@ -1,20 +1,16 @@
 import logging
 from typing import Optional, Tuple
 
-import cv2  # type: ignore
+try:
+    import cv2  # type: ignore
+except ImportError:
+    cv2 = None
+
 import numpy as np
 import torch
 import torch.nn.functional as F
 from PIL import Image
 from torchvision import transforms  # type: ignore
-
-# Flexible Grad-CAM import for stable operation in different environments
-try:
-    from pytorch_grad_cam import GradCAM  # type: ignore
-    from pytorch_grad_cam.utils.image import show_cam_on_image  # type: ignore
-except ImportError:
-    GradCAM = None
-    show_cam_on_image = None
 
 logger = logging.getLogger(__name__)
 
