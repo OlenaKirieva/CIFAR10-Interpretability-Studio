@@ -111,25 +111,27 @@ def render_probability_chart(classes: List[str], probs: torch.Tensor) -> None:
     st.plotly_chart(fig, width="stretch")
 
 
-def render_prediction_box(
-    config: Dict[str, Any], pred_idx: int, conf: float, true_label: Optional[str] = None
-) -> None:
+def render_prediction_box(config: Dict[str, Any], pred_idx: int, conf: float, true_label: Optional[str] = None) -> None:
     """
-    Displays the prediction result in a color-coded box (Success for correct, Error for incorrect).
+    Renders prediction results in a stable container to prevent UI ghosting.
     """
     class_name = config["classes"][pred_idx]
-
-    if true_label is not None:
-        is_correct = class_name == true_label
-        if is_correct:
-            st.success(f"**Prediction:** {class_name} (Correct)")
+    
+    # Creating a clean container for results
+    with st.container():
+        if true_label is not None:
+            if class_name == true_label:
+                st.success(f"**Prediction:** {class_name.upper()} (Correct)")
+                # Adding a blank space to ensure consistent row count
+                st.write("") 
+            else:
+                st.error(f"**Prediction:** {class_name.upper()} (Incorrect)")
+                st.info(f"**True Category:** {true_label}")
         else:
-            st.error(f"**Prediction:** {class_name} (Incorrect)")
-            st.info(f"**True Category:** {true_label}")
-    else:
-        st.success(f"**Predicted Class:** {class_name}")
+            st.success(f"**Predicted Class:** {class_name.upper()}")
+            st.write("") # Spacer
 
-    st.write(f"**Model Confidence:** {conf:.2%}")
+        st.write(f"**Model Confidence:** {conf:.2%}")
 
 
 def create_report_image(
