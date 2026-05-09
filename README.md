@@ -3,7 +3,7 @@
 An interactive analytical dashboard built with Streamlit and MLflow to explore, audit, and interpret deep learning models trained on the CIFAR-10 dataset.
 
 ## 🚀 Live Demo
-[app.py](https://cifar10-interpretability-studio-busruwlozm5gpn9zve8abn.streamlit.app)
+https://cifar10-interpretability-studio-busruwlozm5gpn9zve8abn.streamlit.app
 
 ## ✨ Key Features
 - **Dataset Explorer:** Visual statistics and interactive inspection of 10,000 test images.
