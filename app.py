@@ -140,15 +140,6 @@ def main() -> None:
             f"**Complexity:** {info.get('layers')} Layers | {info.get('params')} Params"
         )
 
-        with st.sidebar.expander("📈 View Training Artifact"):
-            report = load_artifact_text(
-                run_id,
-                selected_exp.experiment_id,
-                mlflow_uri,
-                "classification_report.txt",
-            )
-            st.code(report if report else "Report not found.", language="text")
-
     except Exception as e:
         st.sidebar.error(f"Setup Error: {e}")
         st.stop()
