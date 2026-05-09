@@ -1,0 +1,10 @@
+mlflow:
+  # Relative path to the SQLite database containing experiment metadata
+  db_path: "mlflow.db"
+
+data:
+  # Path to the test image registry generated automatically on the first launch
+  registry_path: "data_cache/test_registry.csv"
+
+# CIFAR-10 class labels used for mapping model indices to human-readable names
+classes: ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]

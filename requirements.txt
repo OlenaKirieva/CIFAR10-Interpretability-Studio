@@ -1,0 +1,16 @@
+streamlit
+mlflow
+torch
+torchvision
+matplotlib
+numpy<2.0.0
+pandas
+scikit-learn
+plotly
+grad-cam
+lime
+scikit-image
+opencv-python-headless
+Pillow
+PyYAML
+protobuf==3.20.3

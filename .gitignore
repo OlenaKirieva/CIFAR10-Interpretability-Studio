@@ -1,0 +1,25 @@
+# --- System files ---
+__pycache__/
+.ipynb_checkpoints/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.DS_Store
+
+# --- Python Environment ---
+.venv/
+venv/
+.poetry/
+poetry.lock
+
+# --- Application Cache (IMPORTANT) ---
+# Ми не вантажимо 10,000 завантажених картинок на GitHub
+data_cache/
+
+# --- Local Logs ---
+# Тимчасові журнали роботи дашборду
+*.log
+
+# --- MLflow local temporary files ---
+# (Ми залишаємо mlruns та mlflow.db, бо вони потрібні для роботи сайту)
+mlruns/.trash/
