@@ -121,7 +121,7 @@ def main() -> None:
             df_preds["image_path"] = df_full["image_path"].iloc[:min_len].values
 
             if model:
-                st.sidebar.success(f"✅ Model Loaded\n{selected_run_name[:30]}...")
+                st.sidebar.success(f"✅ Model Loaded\n{selected_run_name}")
 
         # 4. MODEL PASSPORT (Metadata Display)
         st.sidebar.divider()
